@@ -79,6 +79,7 @@ No database file, migrations, or auth implementation exist yet — expect to bui
 - **Vanilla JS only** — no React, no jQuery, no npm packages
 - **No new pip packages** — work within `requirements.txt` as-is unless explicitly told otherwise
 - Python 3.10+ assumed — f-strings and `match` statements are fine
+- **INR only** — the app supports Indian Rupees exclusively; no currency field, selector, or conversion logic
 
 ---
 
