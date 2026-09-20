@@ -50,7 +50,11 @@
                     Top category
                 </span>
                 <span class="profile-stat-badge">
+                    {% if stats.top_category %}
                     <span class="badge badge-{{ stats.top_category|lower }}">{{ stats.top_category }}</span>
+                    {% else %}
+                    <span class="stat-value profile-stat-value">—</span>
+                    {% endif %}
                 </span>
             </div>
         </section>
@@ -89,6 +93,7 @@
 
             <section class="profile-panel" aria-labelledby="breakdown-heading">
                 <h2 class="profile-panel-title" id="breakdown-heading">Spending by category</h2>
+                {% if categories %}
                 <ul class="breakdown-list">
                     {% for category in categories %}
                     <li class="breakdown-row">
@@ -101,6 +106,9 @@
                     </li>
                     {% endfor %}
                 </ul>
+                {% else %}
+                <p class="tx-empty breakdown-empty">No spending to show yet.</p>
+                {% endif %}
             </section>
 
         </div>

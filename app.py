@@ -7,7 +7,10 @@ from werkzeug.security import check_password_hash
 
 from database.db import (  # noqa: F401
     create_user,
+    get_category_breakdown,
     get_db,
+    get_expense_summary,
+    get_recent_expenses,
     get_user_by_email,
     get_user_by_id,
     init_db,
@@ -147,35 +150,6 @@ def privacy():
     return render_template("privacy.html")
 
 
-# Hardcoded placeholder data for the profile page.
-# Replaced by database/db.py queries in Step 5.
-PROFILE_STATS = {
-    "total_spent": 10000.00,
-    "transaction_count": 8,
-    "top_category": "Bills",
-}
-
-PROFILE_TRANSACTIONS = [
-    {"date": "2026-09-18", "description": "Running shoes", "category": "Shopping", "amount": 2800.00},
-    {"date": "2026-09-16", "description": "Grocery run", "category": "Food", "amount": 1240.00},
-    {"date": "2026-09-14", "description": "Electricity bill", "category": "Bills", "amount": 2150.00},
-    {"date": "2026-09-12", "description": "Movie night", "category": "Entertainment", "amount": 1000.00},
-    {"date": "2026-09-10", "description": "Pharmacy", "category": "Health", "amount": 800.00},
-    {"date": "2026-09-08", "description": "Lunch with team", "category": "Food", "amount": 560.00},
-    {"date": "2026-09-06", "description": "Metro card recharge", "category": "Transport", "amount": 600.00},
-    {"date": "2026-09-03", "description": "Internet bill", "category": "Bills", "amount": 850.00},
-]
-
-PROFILE_CATEGORIES = [
-    {"name": "Bills", "amount": 3000.00, "percent": 30},
-    {"name": "Shopping", "amount": 2800.00, "percent": 28},
-    {"name": "Food", "amount": 1800.00, "percent": 18},
-    {"name": "Entertainment", "amount": 1000.00, "percent": 10},
-    {"name": "Health", "amount": 800.00, "percent": 8},
-    {"name": "Transport", "amount": 600.00, "percent": 6},
-]
-
-
 def _initials(name):
     """First letter of the first and last words of a name, uppercased."""
     words = name.split()
@@ -206,12 +180,13 @@ def profile():
         "initials": _initials(user_row["name"]),
         "member_since": _format_member_since(user_row["created_at"]),
     }
+    user_id = user_row["id"]
     return render_template(
         "profile.html",
         user=user,
-        stats=PROFILE_STATS,
-        transactions=PROFILE_TRANSACTIONS,
-        categories=PROFILE_CATEGORIES,
+        stats=get_expense_summary(user_id),
+        transactions=get_recent_expenses(user_id),
+        categories=get_category_breakdown(user_id),
     )
 
 
