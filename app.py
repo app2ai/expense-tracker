@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from datetime import datetime
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
@@ -146,13 +147,77 @@ def privacy():
     return render_template("privacy.html")
 
 
-# ------------------------------------------------------------------ #
-# Placeholder routes — students will implement these                  #
-# ------------------------------------------------------------------ #
+# Hardcoded placeholder data for the profile page.
+# Replaced by database/db.py queries in Step 5.
+PROFILE_STATS = {
+    "total_spent": 10000.00,
+    "transaction_count": 8,
+    "top_category": "Bills",
+}
+
+PROFILE_TRANSACTIONS = [
+    {"date": "2026-09-18", "description": "Running shoes", "category": "Shopping", "amount": 2800.00},
+    {"date": "2026-09-16", "description": "Grocery run", "category": "Food", "amount": 1240.00},
+    {"date": "2026-09-14", "description": "Electricity bill", "category": "Bills", "amount": 2150.00},
+    {"date": "2026-09-12", "description": "Movie night", "category": "Entertainment", "amount": 1000.00},
+    {"date": "2026-09-10", "description": "Pharmacy", "category": "Health", "amount": 800.00},
+    {"date": "2026-09-08", "description": "Lunch with team", "category": "Food", "amount": 560.00},
+    {"date": "2026-09-06", "description": "Metro card recharge", "category": "Transport", "amount": 600.00},
+    {"date": "2026-09-03", "description": "Internet bill", "category": "Bills", "amount": 850.00},
+]
+
+PROFILE_CATEGORIES = [
+    {"name": "Bills", "amount": 3000.00, "percent": 30},
+    {"name": "Shopping", "amount": 2800.00, "percent": 28},
+    {"name": "Food", "amount": 1800.00, "percent": 18},
+    {"name": "Entertainment", "amount": 1000.00, "percent": 10},
+    {"name": "Health", "amount": 800.00, "percent": 8},
+    {"name": "Transport", "amount": 600.00, "percent": 6},
+]
+
+
+def _initials(name):
+    """First letter of the first and last words of a name, uppercased."""
+    words = name.split()
+    if not words:
+        return "?"
+    if len(words) == 1:
+        return words[0][0].upper()
+    return (words[0][0] + words[-1][0]).upper()
+
+
+def _format_member_since(created_at):
+    """'2026-09-18 10:30:00' -> 'Sep 2026'; falls back to the raw value."""
+    try:
+        return datetime.strptime(created_at[:10], "%Y-%m-%d").strftime("%b %Y")
+    except (TypeError, ValueError):
+        return created_at
+
 
 @app.route("/profile")
 def profile():
-    return "Profile page — coming in Step 4"
+    user_row = _get_current_user()
+    if user_row is None:
+        return redirect(url_for("login"))
+
+    user = {
+        "name": user_row["name"],
+        "email": user_row["email"],
+        "initials": _initials(user_row["name"]),
+        "member_since": _format_member_since(user_row["created_at"]),
+    }
+    return render_template(
+        "profile.html",
+        user=user,
+        stats=PROFILE_STATS,
+        transactions=PROFILE_TRANSACTIONS,
+        categories=PROFILE_CATEGORIES,
+    )
+
+
+# ------------------------------------------------------------------ #
+# Placeholder routes — students will implement these                  #
+# ------------------------------------------------------------------ #
 
 
 @app.route("/expenses/add")

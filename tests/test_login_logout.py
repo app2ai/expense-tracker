@@ -197,7 +197,6 @@ def test_get_user_by_id(app):
 
 def test_stub_routes_are_unchanged(client):
     assert "coming in Step 3" not in client.get("/logout").get_data(as_text=True)
-    assert "Step 4" in client.get("/profile").get_data(as_text=True)
     assert "Step 7" in client.get("/expenses/add").get_data(as_text=True)
     assert "Step 8" in client.get("/expenses/1/edit").get_data(as_text=True)
     assert "Step 9" in client.get("/expenses/1/delete").get_data(as_text=True)

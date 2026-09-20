@@ -129,6 +129,9 @@ button.nav-cta {
     white-space: nowrap;
 }
 
+.nav-links a.nav-user { color: var(--ink-soft); }
+.nav-links a.nav-user:hover { color: var(--accent); }
+
 /* ------------------------------------------------------------------ */
 /* Main                                                                */
 /* ------------------------------------------------------------------ */

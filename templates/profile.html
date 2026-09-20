@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% macro inr(amount) %}₹{{ "{:,.2f}".format(amount) }}{% endmacro %}
+
+{% block title %}Profile — Spendly{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="profile">
+    <div class="profile-inner">
+
+        <section class="profile-card" aria-labelledby="profile-name">
+            <div class="profile-avatar" aria-hidden="true">{{ user.initials }}</div>
+            <div class="profile-identity">
+                <h1 class="profile-name" id="profile-name">{{ user.name }}</h1>
+                <ul class="profile-meta">
+                    <li>
+                        <span class="profile-icon" aria-hidden="true"><i data-lucide="mail"></i></span>
+                        <span>{{ user.email }}</span>
+                    </li>
+                    <li>
+                        <span class="profile-icon" aria-hidden="true"><i data-lucide="calendar-days"></i></span>
+                        <span>Member since {{ user.member_since }}</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="profile-stats" aria-label="Spending summary">
+            <div class="stat-card">
+                <span class="stat-label">
+                    <span class="profile-icon" aria-hidden="true"><i data-lucide="wallet"></i></span>
+                    Total spent
+                </span>
+                <span class="stat-value profile-stat-value">{{ inr(stats.total_spent) }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">
+                    <span class="profile-icon" aria-hidden="true"><i data-lucide="receipt"></i></span>
+                    Transactions
+                </span>
+                <span class="stat-value profile-stat-value">{{ stats.transaction_count }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">
+                    <span class="profile-icon" aria-hidden="true"><i data-lucide="tag"></i></span>
+                    Top category
+                </span>
+                <span class="profile-stat-badge">
+                    <span class="badge badge-{{ stats.top_category|lower }}">{{ stats.top_category }}</span>
+                </span>
+            </div>
+        </section>
+
+        <div class="profile-grid">
+
+            <section class="profile-panel" aria-labelledby="tx-heading">
+                <h2 class="profile-panel-title" id="tx-heading">Recent transactions</h2>
+                <div class="table-wrap" role="region" aria-labelledby="tx-heading" tabindex="0">
+                    <table class="tx-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Date</th>
+                                <th scope="col">Description</th>
+                                <th scope="col">Category</th>
+                                <th scope="col" class="num">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tx in transactions %}
+                            <tr class="tx-row">
+                                <td class="tx-date">{{ tx.date }}</td>
+                                <td>{{ tx.description }}</td>
+                                <td><span class="badge badge-{{ tx.category|lower }}">{{ tx.category }}</span></td>
+                                <td class="num">{{ inr(tx.amount) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="tx-empty">No transactions yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="profile-panel" aria-labelledby="breakdown-heading">
+                <h2 class="profile-panel-title" id="breakdown-heading">Spending by category</h2>
+                <ul class="breakdown-list">
+                    {% for category in categories %}
+                    <li class="breakdown-row">
+                        <div class="breakdown-head">
+                            <span class="breakdown-name">{{ category.name }}</span>
+                            <span class="breakdown-amount">{{ inr(category.amount) }}</span>
+                            <span class="breakdown-percent">{{ category.percent }}%</span>
+                        </div>
+                        <progress class="breakdown-bar" value="{{ category.percent }}" max="100">{{ category.percent }}%</progress>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </section>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) { lucide.createIcons(); }</script>
+{% endblock %}
