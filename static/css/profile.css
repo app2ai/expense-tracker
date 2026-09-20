@@ -236,6 +236,10 @@
     gap: 1.5rem;
 }
 
+.breakdown-empty {
+    padding: 1.5rem 0;
+}
+
 .breakdown-head {
     display: flex;
     align-items: baseline;

@@ -61,7 +61,7 @@ def test_summary_stats_are_shown(client):
     assert html.count('class="stat-card"') >= 3
     for label in ("Total spent", "Transactions", "Top category"):
         assert label in html
-    assert "₹10,000.00" in html
+    assert "₹5,164.25" in html
     assert "badge-bills" in html
 
 
@@ -70,8 +70,8 @@ def test_transaction_table_has_rows(client):
     assert html.count('class="tx-row"') >= 3
     for header in ("Date", "Description", "Category", "Amount"):
         assert f">{header}</th>" in html
-    assert "Grocery run" in html
-    assert "₹1,240.00" in html
+    assert "Groceries" in html
+    assert "₹320.50" in html
     assert "badge-food" in html
 
 

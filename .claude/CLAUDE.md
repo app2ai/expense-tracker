@@ -102,7 +102,7 @@ No database file, migrations, or auth implementation exist yet — expect to bui
 | `GET /register` | Implemented — renders `register.html` |
 | `GET /login` | Implemented — renders `login.html` |
 | `GET /logout` | Stub — Step 3 |
-| `GET /profile` | Implemented — Step 4, renders `profile.html` with hardcoded data (real user identity); DB wiring in Step 5 |
+| `GET /profile` | Implemented — Steps 4-5, renders `profile.html` with real user identity and per-user stats, recent transactions and category breakdown read from the database |
 | `GET /expenses/add` | Stub — Step 7 |
 | `GET /expenses/<id>/edit` | Stub — Step 8 |
 | `GET /expenses/<id>/delete` | Stub — Step 9 |
