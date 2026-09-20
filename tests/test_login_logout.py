@@ -30,7 +30,7 @@ def test_get_login_renders_form(client):
 def test_demo_login_redirects_and_starts_session(client):
     response = post_login(client)
     assert response.status_code == 302
-    assert response.headers["Location"].endswith("/")
+    assert response.headers["Location"].endswith("/profile")
 
     with client.session_transaction() as sess:
         assert sess["user_id"] == demo_user_id()
