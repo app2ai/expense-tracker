@@ -1,12 +1,14 @@
 import os
 import sqlite3
 
-from flask import Flask, flash, redirect, render_template, request, url_for
+from flask import Flask, flash, redirect, render_template, request, session, url_for
+from werkzeug.security import check_password_hash
 
 from database.db import (  # noqa: F401
     create_user,
     get_db,
     get_user_by_email,
+    get_user_by_id,
     init_db,
     seed_db,
 )
@@ -22,6 +24,19 @@ app.secret_key = os.environ.get("SECRET_KEY", DEV_SECRET_KEY)
 with app.app_context():
     init_db()
     seed_db()
+
+
+def _get_current_user():
+    """Return the signed-in user row, or None. Drops a stale session user id."""
+    user = get_user_by_id(session.get("user_id"))
+    if user is None:
+        session.pop("user_id", None)
+    return user
+
+
+@app.context_processor
+def inject_current_user():
+    return {"current_user": _get_current_user()}
 
 
 # ------------------------------------------------------------------ #
@@ -50,6 +65,9 @@ def _register_error(message, name, email):
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    if _get_current_user():
+        return redirect(url_for("landing"))
+
     if request.method == "GET":
         return render_template("register.html")
 
@@ -78,9 +96,44 @@ def register():
     return redirect(url_for("login"))
 
 
-@app.route("/login")
+def _login_error(message, email, status):
+    """Re-render the form with an error, keeping the email but never the password."""
+    return render_template("login.html", error=message, email=email), status
+
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    return render_template("login.html")
+    if _get_current_user():
+        return redirect(url_for("landing"))
+
+    if request.method == "GET":
+        return render_template("login.html")
+
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "")
+
+    if not email or not password:
+        return _login_error("Email and password are required", email, 400)
+
+    user = get_user_by_email(email)
+    if user is None or not check_password_hash(user["password_hash"], password):
+        return _login_error("Invalid email or password", email, 401)
+
+    session.clear()
+    session["user_id"] = user["id"]
+    return redirect(url_for("landing"))
+
+
+@app.route("/logout", methods=["GET", "POST"])
+def logout():
+    # Only the navbar's Sign out button (POST) signs a user out; typing /logout
+    # in the address bar (GET) sends a signed-in user back home.
+    if _get_current_user():
+        if request.method == "GET":
+            return redirect(url_for("landing"))
+        session.clear()
+        flash("You have been signed out")
+    return redirect(url_for("login"))
 
 
 @app.route("/terms")
@@ -96,11 +149,6 @@ def privacy():
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
-
-@app.route("/logout")
-def logout():
-    return "Logout — coming in Step 3"
-
 
 @app.route("/profile")
 def profile():
