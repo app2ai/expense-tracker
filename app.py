@@ -1,6 +1,7 @@
 import os
 import sqlite3
-from datetime import datetime
+from calendar import monthrange
+from datetime import date, datetime
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
@@ -168,6 +169,86 @@ def _format_member_since(created_at):
         return created_at
 
 
+# ------------------------------------------------------------------ #
+# Profile date filter                                                 #
+# ------------------------------------------------------------------ #
+
+_PRESET_LABELS = {
+    "this_month": "This Month",
+    "last_3_months": "Last 3 Months",
+    "last_6_months": "Last 6 Months",
+    "all_time": "All Time",
+}
+_PRESET_ORDER = ("this_month", "last_3_months", "last_6_months", "all_time")
+
+
+def _months_ago(today, months):
+    """Return the date `months` calendar months before `today`, day clamped
+    to the target month's length (so e.g. Mar 31 minus 1 month -> Feb 28/29)."""
+    month_index = today.month - 1 - months
+    year = today.year + month_index // 12
+    month = month_index % 12 + 1
+    day = min(today.day, monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def _preset_range(preset, today):
+    """Return (date_from, date_to) ISO strings for a named preset, or (None,
+    None) for "all_time" / an unknown preset name."""
+    if preset == "this_month":
+        return today.replace(day=1).isoformat(), today.isoformat()
+    if preset == "last_3_months":
+        return _months_ago(today, 3).isoformat(), today.isoformat()
+    if preset == "last_6_months":
+        return _months_ago(today, 6).isoformat(), today.isoformat()
+    return None, None
+
+
+def _parse_iso_date(value):
+    """Parse a 'YYYY-MM-DD' string into a date, or None if missing/malformed."""
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def _parse_date_filter():
+    """Read and validate date_from/date_to from the query string.
+
+    Returns (date_from, date_to) as ISO strings when both are present and
+    well-formed with date_from <= date_to. Otherwise returns (None, None) —
+    an "All Time" fallback — flashing an error only when both dates parsed
+    but were reversed.
+    """
+    raw_from = request.args.get("date_from", "").strip()
+    raw_to = request.args.get("date_to", "").strip()
+
+    parsed_from = _parse_iso_date(raw_from)
+    parsed_to = _parse_iso_date(raw_to)
+
+    if parsed_from is None or parsed_to is None:
+        return None, None
+
+    if parsed_from > parsed_to:
+        flash("Start date must be before end date.")
+        return None, None
+
+    return raw_from, raw_to
+
+
+def _active_preset(date_from, date_to, today):
+    """Return the preset key matching (date_from, date_to), or None for a
+    custom range."""
+    if date_from is None and date_to is None:
+        return "all_time"
+    for preset in ("this_month", "last_3_months", "last_6_months"):
+        if _preset_range(preset, today) == (date_from, date_to):
+            return preset
+    return None
+
+
 @app.route("/profile")
 def profile():
     user_row = _get_current_user()
@@ -181,12 +262,31 @@ def profile():
         "member_since": _format_member_since(user_row["created_at"]),
     }
     user_id = user_row["id"]
+
+    date_from, date_to = _parse_date_filter()
+    today = date.today()
+    active_preset = _active_preset(date_from, date_to, today)
+    presets = [
+        {
+            "key": key,
+            "label": _PRESET_LABELS[key],
+            "date_from": _preset_range(key, today)[0],
+            "date_to": _preset_range(key, today)[1],
+            "active": key == active_preset,
+        }
+        for key in _PRESET_ORDER
+    ]
+
     return render_template(
         "profile.html",
         user=user,
-        stats=get_expense_summary(user_id),
-        transactions=get_recent_expenses(user_id),
-        categories=get_category_breakdown(user_id),
+        stats=get_expense_summary(user_id, start_date=date_from, end_date=date_to),
+        transactions=get_recent_expenses(user_id, start_date=date_from, end_date=date_to),
+        categories=get_category_breakdown(user_id, start_date=date_from, end_date=date_to),
+        presets=presets,
+        date_from=date_from,
+        date_to=date_to,
+        custom_active=active_preset is None and date_from is not None,
     )
 
 

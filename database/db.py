@@ -100,20 +100,27 @@ def get_user_by_id(user_id):
         conn.close()
 
 
-def get_recent_expenses(user_id, limit=10):
+def get_recent_expenses(user_id, limit=10, start_date=None, end_date=None):
     """Return a user's newest expenses as plain dicts, newest first.
 
     Ordered by date then id (both descending) so same-day rows keep a stable order.
-    A missing description comes back as an empty string.
+    A missing description comes back as an empty string. When start_date and
+    end_date are both given (inclusive ISO 'YYYY-MM-DD' strings), only expenses
+    in that range are returned; otherwise all of the user's expenses are eligible.
     """
     conn = get_db()
     try:
-        rows = conn.execute(
+        sql = (
             "SELECT date, COALESCE(description, '') AS description, category, amount "
-            "FROM expenses WHERE user_id = ? "
-            "ORDER BY date DESC, id DESC LIMIT ?",
-            (user_id, limit),
-        ).fetchall()
+            "FROM expenses WHERE user_id = ?"
+        )
+        params = [user_id]
+        if start_date and end_date:
+            sql += " AND date BETWEEN ? AND ?"
+            params.extend([start_date, end_date])
+        sql += " ORDER BY date DESC, id DESC LIMIT ?"
+        params.append(limit)
+        rows = conn.execute(sql, params).fetchall()
     finally:
         conn.close()
     return [
@@ -148,14 +155,16 @@ def create_user(name, email, password):
         conn.close()
 
 
-def get_expense_summary(user_id):
+def get_expense_summary(user_id, start_date=None, end_date=None):
     """Return total_spent, transaction_count and top_category for a user.
 
-    A user with no expenses gets 0.0, 0 and None.
+    A user with no expenses (or none in the given range) gets 0.0, 0 and None.
+    When start_date and end_date are both given (inclusive ISO 'YYYY-MM-DD'
+    strings), only expenses in that range are counted.
     """
     conn = get_db()
     try:
-        totals = _category_totals(conn, user_id)
+        totals = _category_totals(conn, user_id, start_date, end_date)
     finally:
         conn.close()
     return {
@@ -165,18 +174,24 @@ def get_expense_summary(user_id):
     }
 
 
-def _category_totals(conn, user_id):
+def _category_totals(conn, user_id, start_date=None, end_date=None):
     """Return (category, total, count) per category for a user, biggest spend first.
 
     Totals are rounded to 2 dp in SQL so genuine ties compare equal and fall back
-    to alphabetical order. Empty list when the user has no expenses.
+    to alphabetical order. Empty list when the user has no expenses. When
+    start_date and end_date are both given (inclusive ISO 'YYYY-MM-DD' strings),
+    only expenses in that range are included; otherwise all expenses count.
     """
-    rows = conn.execute(
+    sql = (
         "SELECT category, ROUND(SUM(amount), 2) AS total, COUNT(*) AS cnt "
-        "FROM expenses WHERE user_id = ? "
-        "GROUP BY category ORDER BY total DESC, category ASC",
-        (user_id,),
-    ).fetchall()
+        "FROM expenses WHERE user_id = ?"
+    )
+    params = [user_id]
+    if start_date and end_date:
+        sql += " AND date BETWEEN ? AND ?"
+        params.extend([start_date, end_date])
+    sql += " GROUP BY category ORDER BY total DESC, category ASC"
+    rows = conn.execute(sql, params).fetchall()
     return [(row["category"], float(row["total"]), int(row["cnt"])) for row in rows]
 
 
@@ -237,15 +252,17 @@ def _allocate_percents(totals):
     return percents
 
 
-def get_category_breakdown(user_id):
+def get_category_breakdown(user_id, start_date=None, end_date=None):
     """Return a user's spend per category as name, amount and whole-number percent.
 
     Biggest spend first (ties alphabetical); percents sum to exactly 100.
-    Empty list when the user has no expenses.
+    Empty list when the user has no expenses (or none in the given range). When
+    start_date and end_date are both given (inclusive ISO 'YYYY-MM-DD' strings),
+    only expenses in that range are included.
     """
     conn = get_db()
     try:
-        totals = _category_totals(conn, user_id)
+        totals = _category_totals(conn, user_id, start_date, end_date)
     finally:
         conn.close()
     percents = _allocate_percents([total for _, total, _ in totals])
