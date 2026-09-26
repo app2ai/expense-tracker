@@ -290,6 +290,13 @@ def profile():
     )
 
 
+@app.route("/analytics")
+def analytics():
+    if _get_current_user() is None:
+        return redirect(url_for("login"))
+    return render_template("analytics.html")
+
+
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #

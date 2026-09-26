@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics — Spendly{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="coming-soon">
+    <div class="coming-soon-card">
+        <div class="coming-soon-badge"><span class="coming-soon-dot"></span>In development</div>
+
+        <div class="coming-soon-icon" aria-hidden="true">📈</div>
+
+        <h1 class="coming-soon-title">Investment tracking</h1>
+
+        <p class="coming-soon-body">
+            Link brokerage accounts, track portfolio performance, and reconcile
+            gains with your monthly budget — all in one place.
+        </p>
+
+        <div class="coming-soon-divider"></div>
+
+        <button type="button" class="coming-soon-notify" data-notify-button>
+            Notify me when it's ready
+        </button>
+        <div class="coming-soon-notified" data-notify-confirmation hidden>
+            <span>✓</span> We'll notify you when it's ready
+        </div>
+    </div>
+</section>
+{% endblock %}
