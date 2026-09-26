@@ -94,6 +94,11 @@
     height: 1rem;
 }
 
+.profile-add-btn {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
 /* --- Date filter bar --- */
 
 .filter-bar {
@@ -386,6 +391,8 @@
         align-items: flex-start;
         padding: 1.5rem;
     }
+
+    .profile-add-btn { margin-left: 0; }
 
     .profile-stats { grid-template-columns: 1fr; }
 

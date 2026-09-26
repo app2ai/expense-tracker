@@ -155,6 +155,26 @@ def create_user(name, email, password):
         conn.close()
 
 
+def create_expense(user_id, amount, category, expense_date, description):
+    """Insert an expense for a user and return the new id.
+
+    expense_date is an ISO 'YYYY-MM-DD' string. A blank or whitespace-only
+    description is stored as NULL. Callers validate the values first.
+    """
+    description = (description or "").strip() or None
+    conn = get_db()
+    try:
+        with conn:
+            cursor = conn.execute(
+                "INSERT INTO expenses (user_id, amount, category, date, description) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (user_id, amount, category, expense_date, description),
+            )
+            return cursor.lastrowid
+    finally:
+        conn.close()
+
+
 def get_expense_summary(user_id, start_date=None, end_date=None):
     """Return total_spent, transaction_count and top_category for a user.
 

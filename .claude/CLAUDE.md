@@ -103,7 +103,7 @@ No database file, migrations, or auth implementation exist yet — expect to bui
 | `GET /login` | Implemented — renders `login.html` |
 | `GET /logout` | Stub — Step 3 |
 | `GET /profile` | Implemented — Steps 4-5, renders `profile.html` with real user identity and per-user stats, recent transactions and category breakdown read from the database |
-| `GET /expenses/add` | Stub — Step 7 |
+| `GET/POST /expenses/add` | Implemented — Step 7, logged-in form rendering `add_expense.html`; validates and inserts via `create_expense()`, then redirects to `/profile` |
 | `GET /expenses/<id>/edit` | Stub — Step 8 |
 | `GET /expenses/<id>/delete` | Stub — Step 9 |
 
