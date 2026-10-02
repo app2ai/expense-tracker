@@ -1,0 +1,12 @@
+/* Add-expense page — builds on the shared .auth-* and .form-* styles in style.css */
+
+.form-select {
+    cursor: pointer;
+    background-color: var(--paper);
+    color: var(--ink);
+}
+
+.form-hint {
+    font-weight: 400;
+    color: var(--ink-muted);
+}

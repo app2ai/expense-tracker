@@ -1,3 +1,4 @@
+import math
 import os
 import sqlite3
 from calendar import monthrange
@@ -7,6 +8,8 @@ from flask import Flask, flash, redirect, render_template, request, session, url
 from werkzeug.security import check_password_hash
 
 from database.db import (  # noqa: F401
+    CATEGORIES,
+    create_expense,
     create_user,
     get_category_breakdown,
     get_db,
@@ -22,6 +25,7 @@ from database.db import (  # noqa: F401
 DEV_SECRET_KEY = "dev-only-insecure-secret-key-change-me"
 
 MIN_PASSWORD_LENGTH = 8
+MAX_DESCRIPTION_LENGTH = 200
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", DEV_SECRET_KEY)
@@ -302,9 +306,58 @@ def analytics():
 # ------------------------------------------------------------------ #
 
 
-@app.route("/expenses/add")
+def _parse_amount(raw):
+    """Parse a rupee amount rounded to 2 dp, or None if it is missing,
+    non-numeric, not finite, or not greater than 0 after rounding."""
+    try:
+        amount = round(float(raw), 2)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(amount) or amount <= 0:
+        return None
+    return amount
+
+
+def _add_expense_error(message, form):
+    """Re-render the add-expense form with an error, keeping the submitted values."""
+    return render_template(
+        "add_expense.html", error=message, form=form, categories=CATEGORIES
+    ), 400
+
+
+@app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    return "Add expense — coming in Step 7"
+    user = _get_current_user()
+    if user is None:
+        return redirect(url_for("login"))
+
+    if request.method == "GET":
+        return render_template(
+            "add_expense.html",
+            form={"date": date.today().isoformat()},
+            categories=CATEGORIES,
+        )
+
+    form = {
+        field: request.form.get(field, "").strip()
+        for field in ("amount", "category", "date", "description")
+    }
+
+    amount = _parse_amount(form["amount"])
+    if amount is None:
+        return _add_expense_error("Enter an amount greater than 0", form)
+    if form["category"] not in CATEGORIES:
+        return _add_expense_error("Choose a valid category", form)
+    if _parse_iso_date(form["date"]) is None:
+        return _add_expense_error("Enter a valid date", form)
+    if len(form["description"]) > MAX_DESCRIPTION_LENGTH:
+        return _add_expense_error(
+            f"Description must be {MAX_DESCRIPTION_LENGTH} characters or fewer", form
+        )
+
+    create_expense(user["id"], amount, form["category"], form["date"], form["description"])
+    flash("Expense added", "success")
+    return redirect(url_for("profile"))
 
 
 @app.route("/expenses/<int:id>/edit")
