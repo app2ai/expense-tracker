@@ -1,5 +1,6 @@
 """Tests for the profile page's real data: summary stats, recent transactions
 and category breakdown (Step 5)."""
+
 from datetime import date
 from pathlib import Path
 
@@ -55,6 +56,7 @@ def _login(client, email=DEMO_EMAIL, password=DEMO_PASSWORD):
 
 
 # ---------------------------------------------------------------- stats ---
+
 
 def test_demo_user_summary(app):
     import database.db as db
@@ -173,6 +175,7 @@ def test_route_new_user_profile_shows_empty_stats(client):
 
 # --------------------------------------------------- transactions ---
 
+
 def test_demo_user_gets_all_eight_seeded_rows(app):
     import database.db as db
 
@@ -186,7 +189,7 @@ def test_rows_are_plain_dicts_with_expected_keys(app):
     rows = db.get_recent_expenses(_demo_id())
     for row in rows:
         assert type(row) is dict
-        assert set(row) == {"date", "description", "category", "amount"}
+        assert set(row) == {"id", "date", "description", "category", "amount"}
 
 
 def test_dates_are_non_increasing(app):
@@ -201,6 +204,7 @@ def test_first_row_is_latest_seeded_expense(app):
 
     day, category, amount, description = max(db.SEED_EXPENSES, key=lambda s: s[0])
     first = db.get_recent_expenses(_demo_id())[0]
+    assert isinstance(first.pop("id"), int)
     assert first == {
         "date": _seed_date(day),
         "description": description,
@@ -314,6 +318,7 @@ def test_route_new_user_sees_empty_transactions_state(client):
 
 
 # ----------------------------------------------------- categories ---
+
 
 def test_demo_breakdown_order_amounts_and_percents(app):
     import database.db as db
@@ -435,6 +440,7 @@ def test_route_fresh_user_sees_breakdown_empty_state(app, client):
 
 
 # ------------------------------------------------------------ app wiring ---
+
 
 def test_hardcoded_profile_constants_are_gone(app):
     import app as app_module

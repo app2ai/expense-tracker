@@ -4,7 +4,16 @@ import sqlite3
 from calendar import monthrange
 from datetime import date, datetime
 
-from flask import Flask, flash, redirect, render_template, request, session, url_for
+from flask import (
+    Flask,
+    abort,
+    flash,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from werkzeug.security import check_password_hash
 
 from database.db import (  # noqa: F401
@@ -13,12 +22,14 @@ from database.db import (  # noqa: F401
     create_user,
     get_category_breakdown,
     get_db,
+    get_expense_by_id,
     get_expense_summary,
     get_recent_expenses,
     get_user_by_email,
     get_user_by_id,
     init_db,
     seed_db,
+    update_expense,
 )
 
 # Dev-only fallback. Insecure and public: production must set SECRET_KEY.
@@ -52,6 +63,7 @@ def inject_current_user():
 # Routes                                                              #
 # ------------------------------------------------------------------ #
 
+
 @app.route("/")
 def landing():
     return render_template("landing.html")
@@ -62,8 +74,10 @@ def _is_valid_email(email):
     if any(char.isspace() for char in email) or email.count("@") != 1:
         return False
     local, domain = email.split("@")
-    return bool(local) and "." in domain and not (
-        domain.startswith(".") or domain.endswith(".")
+    return (
+        bool(local)
+        and "." in domain
+        and not (domain.startswith(".") or domain.endswith("."))
     )
 
 
@@ -285,8 +299,12 @@ def profile():
         "profile.html",
         user=user,
         stats=get_expense_summary(user_id, start_date=date_from, end_date=date_to),
-        transactions=get_recent_expenses(user_id, start_date=date_from, end_date=date_to),
-        categories=get_category_breakdown(user_id, start_date=date_from, end_date=date_to),
+        transactions=get_recent_expenses(
+            user_id, start_date=date_from, end_date=date_to
+        ),
+        categories=get_category_breakdown(
+            user_id, start_date=date_from, end_date=date_to
+        ),
         presets=presets,
         date_from=date_from,
         date_to=date_to,
@@ -318,11 +336,37 @@ def _parse_amount(raw):
     return amount
 
 
+def _read_expense_form():
+    """Return the submitted expense fields, stripped, keyed by field name."""
+    return {
+        field: request.form.get(field, "").strip()
+        for field in ("amount", "category", "date", "description")
+    }
+
+
+def _validate_expense_form(form):
+    """Return (error_message, amount). error_message is None when the form is
+    valid, in which case amount is the parsed, 2-dp rupee value."""
+    amount = _parse_amount(form["amount"])
+    if amount is None:
+        return "Enter an amount greater than 0", None
+    if form["category"] not in CATEGORIES:
+        return "Choose a valid category", None
+    if _parse_iso_date(form["date"]) is None:
+        return "Enter a valid date", None
+    if len(form["description"]) > MAX_DESCRIPTION_LENGTH:
+        return f"Description must be {MAX_DESCRIPTION_LENGTH} characters or fewer", None
+    return None, amount
+
+
 def _add_expense_error(message, form):
     """Re-render the add-expense form with an error, keeping the submitted values."""
-    return render_template(
-        "add_expense.html", error=message, form=form, categories=CATEGORIES
-    ), 400
+    return (
+        render_template(
+            "add_expense.html", error=message, form=form, categories=CATEGORIES
+        ),
+        400,
+    )
 
 
 @app.route("/expenses/add", methods=["GET", "POST"])
@@ -338,31 +382,60 @@ def add_expense():
             categories=CATEGORIES,
         )
 
-    form = {
-        field: request.form.get(field, "").strip()
-        for field in ("amount", "category", "date", "description")
-    }
+    form = _read_expense_form()
+    error, amount = _validate_expense_form(form)
+    if error:
+        return _add_expense_error(error, form)
 
-    amount = _parse_amount(form["amount"])
-    if amount is None:
-        return _add_expense_error("Enter an amount greater than 0", form)
-    if form["category"] not in CATEGORIES:
-        return _add_expense_error("Choose a valid category", form)
-    if _parse_iso_date(form["date"]) is None:
-        return _add_expense_error("Enter a valid date", form)
-    if len(form["description"]) > MAX_DESCRIPTION_LENGTH:
-        return _add_expense_error(
-            f"Description must be {MAX_DESCRIPTION_LENGTH} characters or fewer", form
-        )
-
-    create_expense(user["id"], amount, form["category"], form["date"], form["description"])
+    create_expense(
+        user["id"], amount, form["category"], form["date"], form["description"]
+    )
     flash("Expense added", "success")
     return redirect(url_for("profile"))
 
 
-@app.route("/expenses/<int:id>/edit")
+def _edit_expense_error(message, form, expense_id):
+    """Re-render the edit-expense form with an error, keeping the submitted values."""
+    return (
+        render_template(
+            "edit_expense.html",
+            error=message,
+            form=form,
+            expense_id=expense_id,
+            categories=CATEGORIES,
+        ),
+        400,
+    )
+
+
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
 def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+    user = _get_current_user()
+    if user is None:
+        return redirect(url_for("login"))
+
+    # 404 for both missing and not-owned ids, so other users' ids aren't revealed.
+    expense = get_expense_by_id(id, user["id"])
+    if expense is None:
+        abort(404)
+
+    if request.method == "GET":
+        form = dict(expense, amount=f"{expense['amount']:.2f}")
+        return render_template(
+            "edit_expense.html", form=form, expense_id=id, categories=CATEGORIES
+        )
+
+    form = _read_expense_form()
+    error, amount = _validate_expense_form(form)
+    if error:
+        return _edit_expense_error(error, form, id)
+
+    if not update_expense(
+        id, user["id"], amount, form["category"], form["date"], form["description"]
+    ):
+        abort(404)
+    flash("Expense updated", "success")
+    return redirect(url_for("profile"))
 
 
 @app.route("/expenses/<int:id>/delete")

@@ -111,7 +111,7 @@ def get_recent_expenses(user_id, limit=10, start_date=None, end_date=None):
     conn = get_db()
     try:
         sql = (
-            "SELECT date, COALESCE(description, '') AS description, category, amount "
+            "SELECT id, date, COALESCE(description, '') AS description, category, amount "
             "FROM expenses WHERE user_id = ?"
         )
         params = [user_id]
@@ -125,6 +125,7 @@ def get_recent_expenses(user_id, limit=10, start_date=None, end_date=None):
         conn.close()
     return [
         {
+            "id": row["id"],
             "date": row["date"],
             "description": row["description"],
             "category": row["category"],
@@ -171,6 +172,52 @@ def create_expense(user_id, amount, category, expense_date, description):
                 (user_id, amount, category, expense_date, description),
             )
             return cursor.lastrowid
+    finally:
+        conn.close()
+
+
+def get_expense_by_id(expense_id, user_id):
+    """Return one of a user's expenses as a plain dict, or None.
+
+    None both when the id does not exist and when it belongs to another user.
+    A missing description comes back as an empty string.
+    """
+    conn = get_db()
+    try:
+        row = conn.execute(
+            "SELECT id, amount, category, date, COALESCE(description, '') AS description "
+            "FROM expenses WHERE id = ? AND user_id = ?",
+            (expense_id, user_id),
+        ).fetchone()
+    finally:
+        conn.close()
+    if row is None:
+        return None
+    return {
+        "id": row["id"],
+        "amount": float(row["amount"]),
+        "category": row["category"],
+        "date": row["date"],
+        "description": row["description"],
+    }
+
+
+def update_expense(expense_id, user_id, amount, category, expense_date, description):
+    """Update one of a user's expenses; return True if a row was changed.
+
+    Only matches a row owned by user_id. A blank or whitespace-only description
+    is stored as NULL. Callers validate the values first.
+    """
+    description = (description or "").strip() or None
+    conn = get_db()
+    try:
+        with conn:
+            cursor = conn.execute(
+                "UPDATE expenses SET amount = ?, category = ?, date = ?, description = ? "
+                "WHERE id = ? AND user_id = ?",
+                (amount, category, expense_date, description, expense_id, user_id),
+            )
+            return cursor.rowcount == 1
     finally:
         conn.close()
 
