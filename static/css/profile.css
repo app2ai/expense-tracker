@@ -308,6 +308,21 @@
 
 .tx-table td.num { font-weight: 500; }
 
+.tx-table .tx-actions {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.tx-edit-link {
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.tx-edit-link:hover,
+.tx-edit-link:focus-visible {
+    text-decoration: underline;
+}
+
 .tx-empty {
     color: var(--ink-muted);
     text-align: center;
