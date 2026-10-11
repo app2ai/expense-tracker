@@ -27,7 +27,9 @@ wenv\Scripts\pytest.exe
 wenv\Scripts\pytest.exe path\to\test_file.py::test_name
 ```
 
-There is no build/lint step configured (no linter config present). `requirements.txt` pins `flask`, `werkzeug`, `pytest`, `pytest-flask`.
+There is no build/lint step configured (no linter config present). `requirements.txt` pins `flask`, `werkzeug`, `gunicorn`, `pytest`, `pytest-flask`.
+
+Deployed on Railway (project `spendly`): `railway up` from the repo root redeploys. Production runs `gunicorn app:app` (start command set on the Railway service), with `SECRET_KEY` and `DATABASE_PATH=/data/expense_tracker.db` (a persistent volume) set as service variables. `.railwayignore` keeps `wenv/` and the local DB out of uploads.
 
 ## Architecture
 
