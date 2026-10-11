@@ -323,6 +323,17 @@
     text-decoration: underline;
 }
 
+.tx-delete-link {
+    color: var(--danger);
+    font-weight: 500;
+    margin-left: 0.75rem;
+}
+
+.tx-delete-link:hover,
+.tx-delete-link:focus-visible {
+    text-decoration: underline;
+}
+
 .tx-empty {
     color: var(--ink-muted);
     text-align: center;

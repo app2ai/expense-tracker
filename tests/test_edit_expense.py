@@ -425,16 +425,3 @@ class TestDbHelpers:
         assert rows, "expected at least one recent expense"
         assert all("id" in r for r in rows)
         assert eid in [r["id"] for r in rows]
-
-
-# ------------------------------------------------- delete still a stub ---
-
-
-class TestDeleteStillPlaceholder:
-    def test_delete_route_returns_step_9_placeholder(self, app, client):
-        eid = _make_expense()
-        _login(client)
-        response = client.get(f"/expenses/{eid}/delete")
-        assert response.status_code == 200
-        assert "Step 9" in response.get_data(as_text=True)
-        assert _row(eid) is not None, "placeholder must not delete anything"

@@ -105,7 +105,7 @@ No database file, migrations, or auth implementation exist yet — expect to bui
 | `GET /profile` | Implemented — Steps 4-5, renders `profile.html` with real user identity and per-user stats, recent transactions and category breakdown read from the database |
 | `GET/POST /expenses/add` | Implemented — Step 7, logged-in form rendering `add_expense.html`; validates and inserts via `create_expense()`, then redirects to `/profile` |
 | `GET/POST /expenses/<id>/edit` | Implemented — Step 8, owner-only form rendering `edit_expense.html`; loads via `get_expense_by_id()` (404 if missing/not owned), validates and saves via `update_expense()`, then redirects to `/profile` |
-| `GET /expenses/<id>/delete` | Stub — Step 9 |
+| `GET/POST /expenses/<id>/delete` | Implemented — Step 9, owner-only confirmation page rendering `delete_expense.html` (GET never deletes); POST deletes via `delete_expense()` (404 if missing/not owned), then redirects to `/profile` |
 
 **Do not implement a stub route unless the active task explicitly targets that step.**
 

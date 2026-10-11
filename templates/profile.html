@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% macro inr(amount) %}₹{{ "{:,.2f}".format(amount) }}{% endmacro %}
+{% from "macros.html" import inr %}
 
 {% block title %}Profile — Spendly{% endblock %}
 
@@ -112,6 +112,8 @@
                                 <td class="tx-actions">
                                     <a href="{{ url_for('edit_expense', id=tx.id) }}" class="tx-edit-link"
                                        aria-label="Edit expense from {{ tx.date }}">Edit</a>
+                                    <a href="{{ url_for('delete_expense', id=tx.id) }}" class="tx-delete-link"
+                                       aria-label="Delete expense from {{ tx.date }}">Delete</a>
                                 </td>
                             </tr>
                             {% else %}
