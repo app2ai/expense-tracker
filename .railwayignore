@@ -1,0 +1,7 @@
+wenv/
+venv/
+expense_tracker.db
+.pytest_cache/
+__pycache__/
+.claude/
+.DS_Store
