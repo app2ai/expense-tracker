@@ -222,6 +222,23 @@ def update_expense(expense_id, user_id, amount, category, expense_date, descript
         conn.close()
 
 
+def delete_expense(expense_id, user_id):
+    """Delete one of a user's expenses; return True if a row was removed.
+
+    Only matches a row owned by user_id.
+    """
+    conn = get_db()
+    try:
+        with conn:
+            cursor = conn.execute(
+                "DELETE FROM expenses WHERE id = ? AND user_id = ?",
+                (expense_id, user_id),
+            )
+            return cursor.rowcount == 1
+    finally:
+        conn.close()
+
+
 def get_expense_summary(user_id, start_date=None, end_date=None):
     """Return total_spent, transaction_count and top_category for a user.
 

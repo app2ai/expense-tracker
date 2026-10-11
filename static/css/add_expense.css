@@ -10,3 +10,46 @@
     font-weight: 400;
     color: var(--ink-muted);
 }
+
+/* Delete-expense confirmation page */
+
+.expense-summary {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.75rem 1rem;
+    margin: 0 0 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.expense-summary dt {
+    color: var(--ink-muted);
+    font-size: 0.875rem;
+}
+
+.expense-summary dd {
+    margin: 0;
+    color: var(--ink);
+    font-weight: 500;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.btn-danger {
+    width: 100%;
+    padding: 0.7rem;
+    background: var(--danger);
+    color: var(--paper);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: filter 0.2s;
+}
+
+.btn-danger:hover,
+.btn-danger:focus-visible {
+    filter: brightness(0.9);
+}
